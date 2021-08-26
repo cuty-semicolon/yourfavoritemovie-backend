@@ -1,24 +1,43 @@
-'use strict';
-const {
-  Model
-} = require('sequelize');
-module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
-    static associate(models) {
-      // define association here
-    }
-  };
-  User.init({
-    user_id: DataTypes.INTEGER,
-    user_name: DataTypes.STRING
-  }, {
-    sequelize,
-    modelName: 'User',
-  });
-  return User;
-};
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+const crypto = require('crypto')
+const config = require('../config')
+
+const User = new Schema({
+    username: {type:String, default: null},
+    password: {type:String, default: null},
+    admin: { type: Boolean, default: false }
+})
+
+User.statics.create = function(username, password) {
+    const encrypted = crypto.createHmac('sha512', config.SECRET)
+                    .update(password)
+                    .digest('base64')
+    console.log(password, encrypted);
+    const user = new this({
+        username,
+        password : encrypted
+    });
+    return user.save()
+}
+
+User.statics.findOneByUsername = function(username) {
+    return this.findOne({
+        username
+    }).exec()
+}
+
+User.methods.verify = function(password) {
+    const encrypted = crypto.createHmac('sha512', config.SECRET)
+                      .update(password)
+                      .digest('base64')
+    console.log(this.password === encrypted);
+    return this.password === encrypted;
+}
+
+User.methods.assignAdmin = function(){
+    this.admin = true;
+    return this.save();
+}
+
+module.exports = mongoose.model('User', User)

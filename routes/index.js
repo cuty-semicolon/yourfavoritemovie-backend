@@ -1,24 +1,10 @@
-const express = require("express");
-const { v4: uuidv4 } = require("uuid");
-const { User, Domain } = require("../models");
-const { isLoggedIn } = require("./middlewares");
+const router = require('express').Router();
+const authMiddleware = require('../middlewares/auth');
+const auth = require('./auth');
+const user = require('./user')
 
-const router = express.Router();
-
-router.get("/", async (req, res, next) => {
-  try {
-    const user = await User.findOne({
-      where: { id: (req.user && req.user.id) || null },
-      include: { model: Domain },
-    });
-    res.render("login", {
-      user,
-      domains: user && user.domains,
-    });
-  } catch (err) {
-    console.error(err);
-    next(err);
-  }
-});
+router.use('/auth', auth);
+router.use('/userlist', authMiddleware)
+router.use('/userlist', user)
 
 module.exports = router;
